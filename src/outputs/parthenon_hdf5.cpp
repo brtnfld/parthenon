@@ -37,6 +37,14 @@
 #include "outputs/parthenon_hdf5.hpp"
 #include "utils/string_utils.hpp"
 
+struct timer_statinfo {
+    double min;
+    double max;
+    double mean;
+    double std;
+};
+struct timer_statinfo stats;
+
 namespace parthenon {
 namespace HDF5 {
 
@@ -65,6 +73,36 @@ std::vector<std::string> HDF5ReadAttributeVec(hid_t location, const std::string 
 
   return res;
 }
+
+void timer_collectstats(double timer, MPI_Comm comm, int destrank, struct timer_statinfo *stats)
+{
+    int rank, nprocs, i;
+    double *rtimers=NULL;    /* All timers from ranks */
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    if(rank == destrank)  {
+        rtimers = (double *) malloc(nprocs*sizeof(double));
+        stats->mean = 0.;
+        stats->min = timer;
+        stats->max = timer;
+        stats->std = 0.f;
+    }
+    MPI_Gather(&timer, 1, MPI_DOUBLE, rtimers, 1, MPI_DOUBLE, destrank, comm);
+    if(rank == destrank) {
+        for(i = 0; i < nprocs; i++) {
+            if(rtimers[i] > stats->max)  stats->max = rtimers[i];
+            if(rtimers[i] < stats->min)  stats->min = rtimers[i];
+            stats->mean += rtimers[i];
+        }
+        stats->mean /= nprocs;
+        for(i = 0; i < nprocs; i++) 
+            stats->std += (rtimers[i]-stats->mean)*(rtimers[i]-stats->mean);
+        stats->std = sqrt(stats->std / nprocs);
+        free(rtimers);
+    }
+}
+
 
 // template specialization for bool
 template <>
@@ -372,6 +410,9 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   const int rootLevel = pm->GetRootLevel();
   const int max_level = pm->GetCurrentLevel() - rootLevel;
   const auto &nblist = pm->GetNbList();
+
+
+  auto start = high_resolution_clock::now();
 
   // open HDF5 file
   // Define output filename
@@ -986,6 +1027,18 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   output_params.next_time += output_params.dt;
   pin->SetInteger(output_params.block_name, "file_number", output_params.file_number);
   pin->SetReal(output_params.block_name, "next_time", output_params.next_time);
+
+  auto stop = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(stop - start);
+  
+  timer_collectstats(duration.count(), MPI_COMM_WORLD, 0, &stats);
+  
+  if (Globals::my_rank == 0) {   
+
+    printf("%s timer seconds mean = %.2f, min = %.2f, max = %.2f, std = %.3f\n",
+           "PHDF5Output", stats.mean*1.e-6, stats.min*1.e-6, stats.max*1.e-6, stats.std*1.e-6);
+
+  }
 }
 
 // explicit template instantiation

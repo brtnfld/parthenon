@@ -21,6 +21,9 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
+using namespace std;
+using namespace std::chrono;
 
 #include "basic_types.hpp"
 #include "interface/mesh_data.hpp"
