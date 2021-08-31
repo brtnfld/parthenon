@@ -451,7 +451,8 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   } delete_info{FILE_INFO_TEMPLATE};
 
   PARTHENON_HDF5_CHECK(H5Pset_sieve_buf_size(acc_file, 262144));
-  PARTHENON_HDF5_CHECK(H5Pset_alignment(acc_file, 524288, 262144));
+  //MSB PARTHENON_HDF5_CHECK(H5Pset_alignment(acc_file, 524288, 262144));
+  PARTHENON_HDF5_CHECK(H5Pset_alignment(acc_file, 16777216, 16777216));
 
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "access_style", "write_once"));
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "collective_buffering", "true"));
@@ -467,6 +468,8 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   PARTHENON_HDF5_CHECK(H5Pset_coll_metadata_write(acc_file, true));
   PARTHENON_HDF5_CHECK(H5Pset_all_coll_metadata_ops(acc_file, true));
 #endif
+
+  PARTHENON_HDF5_CHECK(H5Pset_meta_block_size(acc_file, 16777216));
 
 #else
   hid_t const acc_file = H5P_DEFAULT;
