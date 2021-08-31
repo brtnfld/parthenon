@@ -461,6 +461,13 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   /* tell the HDF5 library that we want to use MPI-IO to do the writing */
   PARTHENON_HDF5_CHECK(H5Pset_fapl_mpio(acc_file, MPI_COMM_WORLD, FILE_INFO_TEMPLATE));
   PARTHENON_HDF5_CHECK(H5Pset_fapl_mpio(acc_file, MPI_COMM_WORLD, MPI_INFO_NULL));
+
+  /* use collective metadata optimizations */
+#if H5_VERSION_GE(1,10,0)
+  PARTHENON_HDF5_CHECK(H5Pset_coll_metadata_write(acc_file, true));
+  PARTHENON_HDF5_CHECK(H5Pset_all_coll_metadata_ops(acc_file, true));
+#endif
+
 #else
   hid_t const acc_file = H5P_DEFAULT;
 #endif // ifdef MPI_PARALLEL
