@@ -456,27 +456,33 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
     ~MPI_InfoDeleter() { MPI_Info_free(&info); }
   } delete_info{FILE_INFO_TEMPLATE};
 
-  PARTHENON_HDF5_CHECK(H5Pset_sieve_buf_size(acc_file, 262144));
   //MSB PARTHENON_HDF5_CHECK(H5Pset_alignment(acc_file, 524288, 262144));
+  if(getenv("FOUR")) {  
   PARTHENON_HDF5_CHECK(H5Pset_alignment(acc_file, 16777216, 16777216));
+  }
 
+  if(getenv("FIVE")) { 
+  PARTHENON_HDF5_CHECK(H5Pset_sieve_buf_size(acc_file, 262144));
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "access_style", "write_once"));
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "collective_buffering", "true"));
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "cb_block_size", "1048576"));
   PARTHENON_MPI_CHECK(MPI_Info_set(FILE_INFO_TEMPLATE, "cb_buffer_size", "4194304"));
-
+  }
+ 
   /* tell the HDF5 library that we want to use MPI-IO to do the writing */
   PARTHENON_HDF5_CHECK(H5Pset_fapl_mpio(acc_file, MPI_COMM_WORLD, FILE_INFO_TEMPLATE));
   PARTHENON_HDF5_CHECK(H5Pset_fapl_mpio(acc_file, MPI_COMM_WORLD, MPI_INFO_NULL));
 
+  if(getenv("TWO")) {
   /* use collective metadata optimizations */
 #if H5_VERSION_GE(1,10,0)
   PARTHENON_HDF5_CHECK(H5Pset_coll_metadata_write(acc_file, true));
   PARTHENON_HDF5_CHECK(H5Pset_all_coll_metadata_ops(acc_file, true));
 #endif
-
+  }
+  if(getenv("THREE")) {
   PARTHENON_HDF5_CHECK(H5Pset_meta_block_size(acc_file, 16777216));
-
+  }
 #else
   hid_t const acc_file = H5P_DEFAULT;
 #endif // ifdef MPI_PARALLEL
@@ -601,9 +607,10 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   H5P const pl_xfer = H5P::FromHIDCheck(H5Pcreate(H5P_DATASET_XFER));
   H5P const pl_dcreate = H5P::FromHIDCheck(H5Pcreate(H5P_DATASET_CREATE));
 
-  PARTHENON_HDF5_CHECK(H5Pset_alloc_time(pl_dcreate, H5D_ALLOC_TIME_EARLY));
-  PARTHENON_HDF5_CHECK(H5Pset_fill_time(pl_dcreate, H5D_FILL_TIME_NEVER));
-
+  if(getenv("ONE")) {
+    PARTHENON_HDF5_CHECK(H5Pset_alloc_time(pl_dcreate, H5D_ALLOC_TIME_EARLY));
+    PARTHENON_HDF5_CHECK(H5Pset_fill_time(pl_dcreate, H5D_FILL_TIME_NEVER));
+  }
 #ifndef PARTHENON_DISABLE_HDF5_COMPRESSION
   if (output_params.hdf5_compression_level > 0) {
     // we need chunks to enable compression
