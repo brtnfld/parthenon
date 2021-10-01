@@ -465,6 +465,17 @@ void PHDF5Output::WriteOutputFileImpl(Mesh *pm, ParameterInput *pin, SimTime *tm
   if(exists)
      PARTHENON_HDF5_CHECK(H5Pset_meta_block_size(acc_file, meta_block_size));
 
+  hsize_t libver;
+  libver = Env::get<hsize_t>("H5_libver", 0, exists);
+
+  if(libver == 0) 
+      H5Pset_libver_bounds(acc_file, H5F_LIBVER_EARLIEST, H5F_LIBVER_EARLIEST);
+  else if(libver == 18)
+      H5Pset_libver_bounds(acc_file, H5F_LIBVER_V18, H5F_LIBVER_V18);
+  else
+      H5Pset_libver_bounds(acc_file, H5F_LIBVER_LATEST,  H5F_LIBVER_LATEST);
+
+
   // Sets alignment properties of a file access property list.
   // Choose an alignment which is a multiple of the disk block size.
   // Default: Disabled
