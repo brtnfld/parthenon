@@ -4,6 +4,24 @@ Outputs from Parthenon are controled via `<parthenon/output*>` blocks, where `*`
 
 To disable an output block without removing it from the intput file set the block's `dt < 0.0`.
 
+In addition to time base outputs, two additional options to trigger outputs
+(applies to HDF5 and restart outputs) exist.
+
+- Signaling: If `Parthenon` catches a signal, e.g., `SIGALRM` which is often sent by
+schedulers such as Slurm to signal a job of exceeding the job's allocated walltime,
+`Parthenon` will gracefully terminate and write output files with a `final` id rather
+than a number.
+This also applies to the `Parthenon` internal walltime limit, e.g., when executing an
+application with the `-t HH:MM:SS` parameter on the command line.
+- File trigger: If a user places a file with the name `output_now` in the working
+directory of a running application, `Parthenon` will write output files with a `now` id
+rather than a number.
+After the output is being written the `output_now` file is removed and the simulation
+continues normally.
+The user can repeat the process any time by creating a new `output_now` file.
+
+Note, in both cases the original numbering of the output will be unaffected and the
+`final` and `now` files will be overwritten each time without warning.
 ## HDF5
 
 Parthenon allows users to select which fields are captured in the HDF5 (`.phdf`) dumps at
@@ -36,7 +54,7 @@ doc](building.md) for more details.
 
 Tuning IO parameters can be passed to Parthenon through the use of environment variables. Available environment variables are:
 
-|  Environment Variable | Default | Value | Description |
+|  Environment Variable | Initial State | Value Type | Description |
 |---|---|---|---|
 | H5_sieve_buf_size | disabled | int | Sets the maximum size of the data sieve buffer, in bytes. The value should be equal to a multiple of the disk block size. If no value is set then the default is 256 KiB. |
 | H5_meta_block_size | disabled | int | Sets the minimum metadata block size, in bytes. If no value is set then the default is 8 MiB. May help performance if enabled. |

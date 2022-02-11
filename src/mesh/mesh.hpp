@@ -128,7 +128,7 @@ class Mesh {
   void FillSameRankFineToCoarseAMR(MeshBlock *pob, MeshBlock *pmb, LogicalLocation &loc);
   int CreateAMRMPITag(int lid, int ox1, int ox2, int ox3);
 
-  std::shared_ptr<MeshBlock> FindMeshBlock(int tgid);
+  std::shared_ptr<MeshBlock> FindMeshBlock(int tgid) const;
 
   void ApplyUserWorkBeforeOutput(ParameterInput *pin);
 
@@ -147,7 +147,7 @@ class Mesh {
   static void UserWorkInLoopDefault(
       Mesh *, ParameterInput *,
       SimTime const &); // default behavior for pre- and post-step user work
-  std::function<void(Mesh *, ParameterInput *, SimTime const &)> PreStepUserWorkInLoop =
+  std::function<void(Mesh *, ParameterInput *, SimTime &)> PreStepUserWorkInLoop =
       &UserWorkInLoopDefault;
   std::function<void(Mesh *, ParameterInput *, SimTime const &)> PostStepUserWorkInLoop =
       &UserWorkInLoopDefault;
